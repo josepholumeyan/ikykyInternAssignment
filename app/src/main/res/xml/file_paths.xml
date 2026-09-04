@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Declares which app-private directories FileProvider is allowed to mint
+  content:// URIs for. Only "collages/" is exposed — not the whole cache
+  dir — so a share intent can never accidentally leak face_crops/ or
+  anything else you didn't intend to share.
+  Place at: app/src/main/res/xml/file_paths.xml
+-->
+<paths>
+    <cache-path name="collages" path="collages/" />
+</paths>
