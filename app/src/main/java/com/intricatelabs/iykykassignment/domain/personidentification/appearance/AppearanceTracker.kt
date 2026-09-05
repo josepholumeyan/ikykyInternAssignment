@@ -12,7 +12,8 @@ import android.util.Log
  */
 class AppearanceTracker(
     private val continuityThreshold: Float = 0.5f,
-    private val maxGapMs: Long = 1000L
+    private val maxGapMs: Long = 1000L,
+    private val holdAppearances : Long = 1500L
 ) {
 
     // list of ongoing appearances currently in front of the camera
@@ -55,7 +56,7 @@ class AppearanceTracker(
     }
 
     fun closeStaleAppearances(currentTimeMs: Long): List<ClosedAppearance> {
-        val (stale, alive) = activeAppearances.partition { currentTimeMs - it.lastSeenMs > maxGapMs }
+        val (stale, alive) = activeAppearances.partition { currentTimeMs - it.lastSeenMs > holdAppearances }
         activeAppearances.clear()
         activeAppearances.addAll(alive)
         return stale.map { it.toClosedAppearance() }

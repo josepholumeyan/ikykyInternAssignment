@@ -20,6 +20,15 @@ object ImageStorage {
         FileOutputStream(file).use { out ->
             bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
         }
+        return file.absolutePath
+    }
+
+    fun saveEmbedding(context: Context, bitmap: Bitmap, key: String): String {
+        val dir = File(context.cacheDir, "embedding").apply { mkdirs() }
+        val file = File(dir, "face_$key.jpg")
+        FileOutputStream(file).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
+        }
         Log.i("Crop path",file.absolutePath)
         return file.absolutePath
     }

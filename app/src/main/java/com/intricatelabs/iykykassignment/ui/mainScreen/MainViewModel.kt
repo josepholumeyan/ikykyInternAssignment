@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import java.io.File
 import javax.inject.Inject
 
@@ -48,9 +49,11 @@ class MainViewModel @Inject constructor(
     val saveResultEvent: SharedFlow<Boolean> = _saveResultEvent
 
     private var lastCollagePath: String? = null
+    private var processingJob: Job? = null
 
     fun onVideoSelected(uri: Uri) {
-        viewModelScope.launch {
+        processingJob?.cancel()
+        processingJob = viewModelScope.launch {
             appDatabase.clearVideoData(uri.toString())
             val videoUriString = uri.toString()
             _uiState.value = UiState.Processing(0f, ProcessingStep.DETECTING_FACES)
@@ -88,10 +91,14 @@ class MainViewModel @Inject constructor(
                     collageImagePath = collageResult.collageImagePath
                 )
             } catch (e: Exception) {
-                Log.e("MainViewModel","error",e)
-                _uiState.value = UiState.Error(
-                    e.message ?: "We couldn't process your video. Please try again."
-                )
+                if (e is kotlinx.coroutines.CancellationException) {
+                    Log.i("MainViewModel", "Processing job cancelled")
+                } else {
+                    Log.e("MainViewModel","error",e)
+                    _uiState.value = UiState.Error(
+                        e.message ?: "We couldn't process your video. Please try again."
+                    )
+                }
             }
         }
     }
@@ -112,15 +119,26 @@ class MainViewModel @Inject constructor(
     fun shareCollage(context: Context) {
         val path = lastCollagePath ?: return
         val file = File(path)
-        // Must match the authorities string in your manifest's <provider>
-        // entry exactly — "${applicationId}.fileprovider" resolves to
-        // this at build time.
         val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
         _shareEvent.tryEmit(uri)
     }
 
     fun reset() {
+        processingJob?.cancel()
+        processingJob = null
         _uiState.value = UiState.Idle
         lastCollagePath = null
+    }
+
+    fun onBackPressed(): Boolean {
+        val currentState = _uiState.value
+        return when (currentState) {
+            is UiState.Idle -> false
+            is UiState.Processing -> true
+            is UiState.Results, is UiState.Error -> {
+                reset()
+                true
+            }
+        }
     }
 }

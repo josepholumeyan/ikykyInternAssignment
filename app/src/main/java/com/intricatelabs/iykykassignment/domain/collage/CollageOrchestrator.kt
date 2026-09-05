@@ -41,7 +41,11 @@ class CollageOrchestrator @Inject constructor(
         val bitmap = CollageComposer.compose(
             people.map { PersonForCollage(it.representativeImagePath, it.appearanceCount) }
         )
-        val collagePath = ImageStorage.saveCollage(context, bitmap, videoUri)
+        val collagePath = try {
+            ImageStorage.saveCollage(context, bitmap, videoUri)
+        } finally {
+            bitmap.recycle()
+        }
 
         CollageResult(collagePath, people)
     }

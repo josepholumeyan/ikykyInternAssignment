@@ -19,7 +19,7 @@ import com.intricatelabs.iykykassignment.ui.theme.DarkBg
 import com.intricatelabs.iykykassignment.ui.theme.Gold
 
 @Composable
-fun ProcessingContent(state: UiState.Processing) {
+fun ProcessingContent(state: UiState.Processing, onCancel: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -31,7 +31,7 @@ fun ProcessingContent(state: UiState.Processing) {
         Text("Processing your video", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(8.dp))
         Text(
-            "This may take a few minutes.\nYou can leave the app and we'll notify you when it's ready.",
+            "This may take a few minutes.",
             color = Color.Gray,
             fontSize = 13.sp
         )
@@ -67,6 +67,16 @@ fun ProcessingContent(state: UiState.Processing) {
                 }
             )
         }
+
+        Spacer(Modifier.weight(1f))
+        OutlinedButton(
+            onClick = onCancel,
+            modifier = Modifier.fillMaxWidth(),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.Gray)
+        ) {
+            Text("CANCEL")
+        }
+        Spacer(Modifier.height(24.dp))
     }
 }
 

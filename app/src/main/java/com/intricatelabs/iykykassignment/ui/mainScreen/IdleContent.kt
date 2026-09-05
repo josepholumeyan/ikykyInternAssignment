@@ -38,9 +38,6 @@ fun IdleContent(onVideoSelected: (Uri) -> Unit) {
     ) {
         Text("ONE VIDEO.", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold)
         Text("EVERY UNIQUE FACE.", color = Color.White, fontSize = 30.sp, fontWeight = FontWeight.Bold)
-        // NOTE: "UNIQUE" is gold in the mockup, requires buildAnnotatedString
-        // for mixed-color inline text — left as plain white here for speed,
-        // trivial to split into three Text spans if you want it.
 
         Spacer(Modifier.height(12.dp))
         Text(

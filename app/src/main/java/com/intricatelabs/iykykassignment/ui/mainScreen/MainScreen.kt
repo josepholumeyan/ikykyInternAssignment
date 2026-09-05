@@ -11,6 +11,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.systemBarsPadding
 
 /**
  * Screen/Content separation: this Composable's only job is reading UiState
@@ -22,6 +24,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 fun MainScreen(viewModel: MainViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    val isHandled = viewModel.onBackPressed()
+    BackHandler(enabled = isHandled) {
+        viewModel.onBackPressed()
+    }
 
     LaunchedEffect(Unit) {
         viewModel.shareEvent.collect { uri ->
@@ -44,13 +51,18 @@ fun MainScreen(viewModel: MainViewModel = hiltViewModel()) {
         }
     }
 
-    Surface(modifier = Modifier.fillMaxSize()) {
+    Surface(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+    ) {
         when (val state = uiState) {
             is UiState.Idle -> IdleContent(
                 onVideoSelected = viewModel::onVideoSelected
             )
             is UiState.Processing -> ProcessingContent(
-                state = state
+                state = state,
+                onCancel = viewModel::reset
             )
             is UiState.Results -> ResultsContent(
                 state = state,

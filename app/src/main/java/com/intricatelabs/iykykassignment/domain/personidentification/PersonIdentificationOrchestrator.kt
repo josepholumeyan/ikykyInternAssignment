@@ -37,18 +37,10 @@ class PersonIdentificationOrchestrator @Inject constructor(
         val tracker = appearanceTrackerFactory.create()
         val clusterer = personClusterFactory.create(videoUri)
 
-        // Group by exact timestamp so every face detected in the SAME frame
-        // is offered to the tracker together — required for offerFrame()'s
-        // two-people-in-one-frame handling to work at all.
         val detectionsByTimestamp: Map<Long, List<FaceDetectionEntity>> =
             detections.groupBy { it.timestampMs }
         val orderedTimestamps = detectionsByTimestamp.keys.sorted()
 
-        // NOTE: this counts only frames that had at least one detected face,
-        // not every sampled frame in the video (phase 1's totalFrames was
-        // duration/step). Progress here approximates "share of face-bearing
-        // frames processed," not "share of video decoded" — fine for a
-        // progress bar, just not literally the same number as phase 1's.
         val totalFrames = orderedTimestamps.size
 
         orderedTimestamps.forEachIndexed { index, timestampMs ->
