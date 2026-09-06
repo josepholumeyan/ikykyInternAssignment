@@ -15,10 +15,6 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-
-    // Must be registered before the Activity reaches STARTED, so this
-    // can't be created lazily inside a click handler later — has to be a
-    // property, set up before onCreate's setContent call.
     private val requestStoragePermission = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) {}

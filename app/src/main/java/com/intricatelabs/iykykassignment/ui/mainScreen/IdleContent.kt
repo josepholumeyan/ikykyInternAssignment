@@ -18,6 +18,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.intricatelabs.iykykassignment.ui.theme.DarkBg
@@ -73,14 +74,6 @@ fun IdleContent(onVideoSelected: (Uri) -> Unit) {
                 Text("+ CHOOSE VIDEO", color = Color.Black, fontWeight = FontWeight.Bold)
             }
             Spacer(Modifier.height(12.dp))
-            Text("OR", color = Color.Gray, fontSize = 12.sp)
-            Spacer(Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = { pickVideo.launch("video/*") },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("BROWSE FILES", color = Gold)
-            }
         }
 
         Spacer(Modifier.height(24.dp))
@@ -93,12 +86,16 @@ fun IdleContent(onVideoSelected: (Uri) -> Unit) {
         Spacer(Modifier.height(24.dp))
         Text("HOW IT WORKS", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp)
         Spacer(Modifier.height(12.dp))
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            HowItWorksStep("Detect faces", "Finds every face in your video.")
-            HowItWorksStep("Identify people", "Groups the same person together.")
-            HowItWorksStep("Best shot", "Picks the clearest, most flattering shot.")
-            HowItWorksStep("Create collage", "Builds a collage you can save & share.")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            HowItWorksStep("Detect faces", "Finds every face in your video.", Modifier.weight(1f))
+            HowItWorksStep("Identify people", "Groups the same person together.", Modifier.weight(1f))
+            HowItWorksStep("Best shot", "Picks the clearest, most flattering shot.", Modifier.weight(1f))
+            HowItWorksStep("Create collage", "Builds a collage you can save & share.", Modifier.weight(1f))
         }
+
 
         Spacer(Modifier.height(24.dp))
         Row(
@@ -117,13 +114,10 @@ fun IdleContent(onVideoSelected: (Uri) -> Unit) {
 }
 
 @Composable
-private fun HowItWorksStep(title: String, description: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.width(80.dp)
-    ) {
-        Text(title, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+private fun HowItWorksStep(title: String, description: String, modifier: Modifier = Modifier) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
+        Text(title, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold, textAlign = TextAlign.Left)
         Spacer(Modifier.height(4.dp))
-        Text(description, color = Color.Gray, fontSize = 10.sp)
+        Text(description, color = Color.Gray, fontSize = 10.sp, textAlign = TextAlign.Left)
     }
 }

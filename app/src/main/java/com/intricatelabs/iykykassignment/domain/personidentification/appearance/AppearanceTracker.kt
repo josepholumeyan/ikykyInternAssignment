@@ -5,10 +5,7 @@ import android.util.Log
 /**
  * Groups consecutive per-frame face detections into "appearance" segments —
  * matches the assignment's definition: a continuous visible span for one
- * person. This is SHORT-TERM, frame-to-frame continuity only — it does NOT
- * decide whether this is the same person as an appearance from 15 seconds
- * ago. That's a separate, harder problem: PersonClusterer, once a segment
- * closes here.
+ * person. This is SHORT-TERM, frame-to-frame continuity only
  */
 class AppearanceTracker(
     private val continuityThreshold: Float = 0.5f,

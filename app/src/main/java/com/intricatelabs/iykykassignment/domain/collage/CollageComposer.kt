@@ -4,17 +4,18 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.LinearGradient
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
-import kotlin.math.ceil
-import kotlin.math.sqrt
-import android.graphics.LinearGradient
 import android.graphics.Shader
+import kotlin.math.ceil
+import kotlin.math.min
+import kotlin.math.sqrt
 import androidx.core.graphics.toColorInt
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.withClip
 import androidx.core.graphics.scale
+import androidx.core.graphics.withClip
+import androidx.core.graphics.createBitmap
 
 /**
  * Composes representative shots with a simple visual hierarchy instead of a
@@ -28,7 +29,7 @@ object CollageComposer {
     private const val PADDING = 24
     private const val CORNER_RADIUS = 44f
     private const val GRID_CELL_SIZE = 420
-    private const val HERO_HEIGHT = 640
+    private const val HERO_ASPECT = 1.0f
     private const val MAX_GRID_COLUMNS = 3
 
     private val BACKGROUND_TOP = "#141210".toColorInt()
@@ -49,20 +50,25 @@ object CollageComposer {
 
         val gridContentWidth = gridColumns * GRID_CELL_SIZE + (gridColumns + 1) * PADDING
         val canvasWidth = if (rest.isEmpty()) GRID_CELL_SIZE + 2 * PADDING else gridContentWidth
-        val canvasHeight = PADDING + HERO_HEIGHT + PADDING +
+        val heroWidth = canvasWidth - PADDING * 2
+        val heroHeight = (heroWidth / HERO_ASPECT).toInt()
+
+        val canvasHeight = PADDING + heroHeight + PADDING +
                 (gridRows * GRID_CELL_SIZE) + (if (gridRows > 0) (gridRows + 1) * PADDING else 0)
 
         val output = createBitmap(canvasWidth, canvasHeight)
         val canvas = Canvas(output)
         drawBackground(canvas, canvasWidth, canvasHeight)
 
-        // Hero tile — full width, taller, whoever appeared most.
+        // Hero tile — full width, whoever appeared most. Height is now
+        // DERIVED from width via HERO_ASPECT, not a fixed constant — see
+        // the note on HERO_ASPECT above for why that distinction matters.
         drawTile(
             canvas, hero,
             left = PADDING.toFloat(),
             top = PADDING.toFloat(),
-            width = (canvasWidth - PADDING * 2).toFloat(),
-            height = HERO_HEIGHT.toFloat(),
+            width = heroWidth.toFloat(),
+            height = heroHeight.toFloat(),
             isHero = true
         )
 
@@ -71,7 +77,7 @@ object CollageComposer {
             val col = index % gridColumns
             val row = index / gridColumns
             val left = PADDING + col * (GRID_CELL_SIZE + PADDING)
-            val top = PADDING + HERO_HEIGHT + PADDING + row * (GRID_CELL_SIZE + PADDING)
+            val top = PADDING + heroHeight + PADDING + row * (GRID_CELL_SIZE + PADDING)
             drawTile(
                 canvas, person,
                 left = left.toFloat(), top = top.toFloat(),
@@ -103,27 +109,28 @@ object CollageComposer {
         val cropped = centerCropToAspect(source, width / height)
         val scaled = cropped.scale(width.toInt(), height.toInt())
 
-        try {
-            val rect = RectF(left, top, left + width, top + height)
-            val path = Path().apply { addRoundRect(rect, CORNER_RADIUS, CORNER_RADIUS, Path.Direction.CW) }
+        val rect = RectF(left, top, left + width, top + height)
+        val path = Path().apply { addRoundRect(rect, CORNER_RADIUS, CORNER_RADIUS, Path.Direction.CW) }
 
-            canvas.withClip(path) {
-                drawBitmap(scaled, left, top, null)
-                val scrimPaint = Paint().apply {
-                    shader = LinearGradient(
-                        0f, top + height * 0.55f, 0f, top + height,
-                        Color.TRANSPARENT, "#CC000000".toColorInt(), Shader.TileMode.CLAMP
-                    )
-                }
-                drawRect(left, top + height * 0.55f, left + width, top + height, scrimPaint)
+        canvas.withClip(path) {
+            drawBitmap(scaled, left, top, null)
+
+            // Gradient scrim instead of a flat badge chip — reads as a photo
+            // caption, not a debug overlay on top of the image.
+            val scrimPaint = Paint().apply {
+                shader = LinearGradient(
+                    0f, top + height * 0.55f, 0f, top + height,
+                    Color.TRANSPARENT, "#CC000000".toColorInt(), Shader.TileMode.CLAMP
+                )
             }
-
-            drawAppearanceLabel(canvas, person.appearanceCount, left, top, width, height, isHero)
-        }  finally {
-            if (cropped !== source) source.recycle()
-            cropped.recycle()
-            scaled.recycle()
+            drawRect(left, top + height * 0.55f, left + width, top + height, scrimPaint)
         }
+
+        drawAppearanceLabel(canvas, person.appearanceCount, left, top, width, height, isHero)
+
+        if (cropped !== source) source.recycle()
+        cropped.recycle()
+        scaled.recycle()
     }
 
     private fun centerCropToAspect(bitmap: Bitmap, targetAspect: Float): Bitmap {

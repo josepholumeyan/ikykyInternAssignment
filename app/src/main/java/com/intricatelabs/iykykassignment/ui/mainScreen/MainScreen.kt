@@ -12,7 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.systemBarsPadding
+import com.intricatelabs.iykykassignment.ui.theme.DarkBg
 
 /**
  * Screen/Content separation: this Composable's only job is reading UiState
@@ -25,9 +27,8 @@ fun MainScreen(viewModel: MainViewModel = hiltViewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    val isHandled = viewModel.onBackPressed()
-    BackHandler(enabled = isHandled) {
-        viewModel.onBackPressed()
+    BackHandler(enabled = uiState !is UiState.Idle) {
+        viewModel.handleBackPress()
     }
 
     LaunchedEffect(Unit) {
@@ -52,28 +53,32 @@ fun MainScreen(viewModel: MainViewModel = hiltViewModel()) {
     }
 
     Surface(
-        modifier = Modifier
-            .fillMaxSize()
-            .systemBarsPadding()
+        modifier = Modifier.fillMaxSize(),
+        color = DarkBg
     ) {
-        when (val state = uiState) {
-            is UiState.Idle -> IdleContent(
-                onVideoSelected = viewModel::onVideoSelected
-            )
-            is UiState.Processing -> ProcessingContent(
-                state = state,
-                onCancel = viewModel::reset
-            )
-            is UiState.Results -> ResultsContent(
-                state = state,
-                onSaveToGallery = viewModel::saveCollageToGallery,
-                onShare = { viewModel.shareCollage(context) }
-            )
-            is UiState.Error -> ErrorContent(
-                message = state.message,
-                onRetry = viewModel::reset,
-                onDismiss = viewModel::reset
-            )
+        Box(modifier = Modifier.fillMaxSize().systemBarsPadding()) {
+            when (val state = uiState) {
+                is UiState.Idle -> IdleContent(
+                    onVideoSelected = viewModel::onVideoSelected
+                )
+
+                is UiState.Processing -> ProcessingContent(
+                    state = state,
+                    onCancel = viewModel::reset
+                )
+
+                is UiState.Results -> ResultsContent(
+                    state = state,
+                    onSaveToGallery = viewModel::saveCollageToGallery,
+                    onShare = { viewModel.shareCollage(context) }
+                )
+
+                is UiState.Error -> ErrorContent(
+                    message = state.message,
+                    onRetry = viewModel::reset,
+                    onDismiss = viewModel::reset
+                )
+            }
         }
     }
 }

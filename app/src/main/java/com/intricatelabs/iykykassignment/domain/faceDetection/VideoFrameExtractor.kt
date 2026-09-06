@@ -1,10 +1,8 @@
 package com.intricatelabs.iykykassignment.domain.faceDetection
 
-import android.content.Context
 import android.media.MediaMetadataRetriever
 import android.os.Build
 import android.util.Log
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -12,9 +10,7 @@ import javax.inject.Inject
 /**
  * Pulls sampled frames out of a video at a fixed interval.
  */
-class VideoFrameExtractor @Inject constructor(
-    @ApplicationContext private val context: Context
-) {
+class VideoFrameExtractor @Inject constructor() {
 
     suspend fun extractFrames(
         retriever: MediaMetadataRetriever,

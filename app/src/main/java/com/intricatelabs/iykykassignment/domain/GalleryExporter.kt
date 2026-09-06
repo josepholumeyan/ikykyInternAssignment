@@ -43,8 +43,6 @@ class GalleryExporter @Inject constructor(
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, filename)
             put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg")
-            // Groups saved collages in their own subfolder instead of
-            // dumping loose files into the root Pictures directory.
             put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/iykykCollage")
             put(MediaStore.Images.Media.IS_PENDING, 1)
         }

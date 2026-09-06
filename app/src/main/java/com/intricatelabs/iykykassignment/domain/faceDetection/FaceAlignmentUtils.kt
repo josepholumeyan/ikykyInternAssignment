@@ -7,18 +7,21 @@ import android.graphics.Paint
 import android.graphics.PointF
 import com.google.mlkit.vision.face.Face
 import com.google.mlkit.vision.face.FaceLandmark
+import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import kotlin.math.atan2
 import kotlin.math.sqrt
-import androidx.core.graphics.createBitmap
 
 object FaceAlignmentUtils {
 
     /**
-     * Aligns a face based on eye landmarks and crops/resizes it to the target size.
-     * Uses standard canonical eye positions for MobileFaceNet (112x112).
+     * allFacesInFrame: every OTHER detection ML Kit returned for this same
+     * frame (pass rawFaces, before dedup — near-duplicate boxes of the SAME
+     * face naturally overlap in x, so they never trigger the "neighbor to
+     * the left/right" clamp below; only genuinely distinct, disjoint boxes
+     * do).
      */
-    fun align(frame: Bitmap, face: Face, targetSize: Int = 112): Bitmap {
+    fun align(frame: Bitmap, face: Face, allFacesInFrame: List<Face>, targetSize: Int = 112): Bitmap {
         val leftEyeFull = face.getLandmark(FaceLandmark.LEFT_EYE)?.position
         val rightEyeFull = face.getLandmark(FaceLandmark.RIGHT_EYE)?.position
 
@@ -26,19 +29,37 @@ object FaceAlignmentUtils {
             return naiveCrop(frame, face, targetSize)
         }
 
-        // Pre-crop generously around the face's own bounding box FIRST.
-        // Without this, when a face is large/close in the frame (common in
-        // a portrait video), the scale math below shrinks the source to
-        // fit the canonical eye spacing — which means the fixed 112x112
-        // canvas ends up sampling a WIDER region of the original frame
-        // than expected, wide enough to pull in a neighboring person
-        // standing nearby. Pre-cropping bounds the maximum possible field
-        // of view by construction, regardless of what the scale factor
-        // turns out to be, instead of trying to tune/clamp the scale value.
         val box = face.boundingBox
-        val marginFactor = 1.0f // generous room for rotation/scale to work with; tune if needed
-        val marginX = (box.width() * marginFactor).toInt()
+        val marginFactor = 1.0f
+        var marginX = (box.width() * marginFactor).toInt()
         val marginY = (box.height() * marginFactor).toInt()
+
+        // Clamp the horizontal margin so the pre-crop can never cross past
+        // roughly the midpoint toward a genuinely neighboring face in the
+        // SAME frame. A fixed percentage margin has no idea how close the
+        // next person is standing — this is what was still letting
+        // side-by-side people's aligned crops bleed into each other even
+        // after bounding the crop to this face's own bbox.
+        for (other in allFacesInFrame) {
+            if (other === face) continue
+            val otherBox = other.boundingBox
+
+            // Only consider neighbors at roughly the same height — a face
+            // far above/below isn't the side-by-side case, and clamping
+            // against it would wrongly shrink margin for an unrelated
+            // vertical framing coincidence.
+            val verticalOverlap = box.top < otherBox.bottom && box.bottom > otherBox.top
+            if (!verticalOverlap) continue
+
+            if (otherBox.left > box.right) {
+                val gap = otherBox.left - box.right
+                marginX = minOf(marginX, (gap / 2).coerceAtLeast(0))
+            } else if (otherBox.right < box.left) {
+                val gap = box.left - otherBox.right
+                marginX = minOf(marginX, (gap / 2).coerceAtLeast(0))
+            }
+        }
+
         val cropLeft = (box.left - marginX).coerceIn(0, frame.width)
         val cropTop = (box.top - marginY).coerceIn(0, frame.height)
         val cropRight = (box.right + marginX).coerceIn(0, frame.width)
@@ -48,8 +69,6 @@ object FaceAlignmentUtils {
 
         val localFrame = Bitmap.createBitmap(frame, cropLeft, cropTop, cropWidth, cropHeight)
 
-        // Landmarks were measured in the FULL frame's coordinate space —
-        // translate into the local crop's coordinate space to match.
         val leftEye = PointF(leftEyeFull.x - cropLeft, leftEyeFull.y - cropTop)
         val rightEye = PointF(rightEyeFull.x - cropLeft, rightEyeFull.y - cropTop)
 
@@ -65,10 +84,6 @@ object FaceAlignmentUtils {
 
         val scale = desiredEyeDist / actualEyeDist
 
-        // postXxx composes in call order (each op runs AFTER what's already
-        // accumulated) — this is the corrected ordering from the earlier
-        // pre/post bug: translate eye to origin, rotate about it, scale
-        // about it, then translate to the canonical position.
         val matrix = Matrix()
         matrix.postTranslate(-leftEye.x, -leftEye.y)
         matrix.postRotate(-angle)

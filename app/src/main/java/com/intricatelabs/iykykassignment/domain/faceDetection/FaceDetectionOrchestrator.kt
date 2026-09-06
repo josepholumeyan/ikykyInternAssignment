@@ -91,7 +91,7 @@ class FaceDetectionOrchestrator @Inject constructor(
                                 val path = ImageStorage.saveCrop(context, crop, UUID.randomUUID().toString())
                                 crop.recycle()
 
-                                val alignedCrop = FaceAlignmentUtils.align(frame.bitmap, face, 112)
+                                val alignedCrop = FaceAlignmentUtils.align(frame.bitmap, face, rawFaces,112)
                                 val embedding = faceEmbedder.embed(alignedCrop)
                                 alignedCrop.recycle()
 

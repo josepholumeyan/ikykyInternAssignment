@@ -13,7 +13,6 @@ import com.intricatelabs.iykykassignment.domain.faceDetection.FaceDetectionOrche
 import com.intricatelabs.iykykassignment.domain.personidentification.PersonIdentificationOrchestrator
 import com.intricatelabs.iykykassignment.domain.personidentification.RepresentativeShotSelector
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -37,11 +36,6 @@ class MainViewModel @Inject constructor(
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
-    // One-shot events for actions that need an Activity context (launching
-    // an intent) rather than a persistent state value — the ViewModel
-    // shouldn't hold an Activity, so it just announces "here's a URI to
-    // share" / "here's whether the save worked" and lets the Composable,
-    // which does have context, react.
     private val _shareEvent = MutableSharedFlow<Uri>(extraBufferCapacity = 1)
     val shareEvent: SharedFlow<Uri> = _shareEvent
 
@@ -130,14 +124,11 @@ class MainViewModel @Inject constructor(
         lastCollagePath = null
     }
 
-    fun onBackPressed(): Boolean {
-        val currentState = _uiState.value
-        return when (currentState) {
-            is UiState.Idle -> false
-            is UiState.Processing -> true
+    fun handleBackPress() {
+        when (_uiState.value) {
+            is UiState.Idle, is  UiState.Processing -> {}
             is UiState.Results, is UiState.Error -> {
                 reset()
-                true
             }
         }
     }
